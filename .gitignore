@@ -1,0 +1,10 @@
+node_modules
+.next
+out
+.env*.local
+*.log
+.DS_Store
+setup-db.js
+supabase-setup.sql
+_*.png
+_*.js
