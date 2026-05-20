@@ -11,10 +11,12 @@ export default function WatchView({ item, allItems, onBack, onPlay, onToast, sub
   const [liked, setLiked] = useState(() => Data.isLiked(item.id));
   const [saved, setSaved] = useState(() => Data.isSaved(item.id));
   const [subUrl, setSubUrl] = useState('');
+  const [localSubUrl, setLocalSubUrl] = useState('');
   const [theaterMode, setTheaterMode] = useState(false);
   const [showAutoNext, setShowAutoNext] = useState(false);
   const blobUrlRef = useRef(null);
   const subUrlRef = useRef(null);
+  const localSubRef = useRef(null);
   const videoRef = useRef(null);
   const lastSaveRef = useRef(0);
 
@@ -80,6 +82,19 @@ export default function WatchView({ item, allItems, onBack, onPlay, onToast, sub
   useEffect(() => {
     setTheaterMode(false);
   }, [item.id]);
+
+  // Local subtitle upload handler (from player CC button)
+  const handleSubUpload = (file) => {
+    if (localSubRef.current) { URL.revokeObjectURL(localSubRef.current); localSubRef.current = null; }
+    const url = URL.createObjectURL(file);
+    localSubRef.current = url;
+    setLocalSubUrl(url);
+    onToast && onToast(`Subtitle "${file.name}" dimuat`, 'success');
+  };
+
+  useEffect(() => {
+    return () => { if (localSubRef.current) URL.revokeObjectURL(localSubRef.current); };
+  }, []);
 
   // Apply body class for theater mode (so sidebar/topbar fade)
   useEffect(() => {
@@ -180,14 +195,15 @@ export default function WatchView({ item, allItems, onBack, onPlay, onToast, sub
               <CustomVideoPlayer
                 ref={videoRef}
                 src={resolvedSrc}
-                subUrl={subUrl}
-                subLang={subtitle === 'manual' ? 'id' : subtitle}
+                subUrl={localSubUrl || subUrl}
+                subLang={subtitle === 'manual' ? 'id' : (subtitle !== 'off' ? subtitle : 'id')}
                 theaterMode={theaterMode}
                 onToggleTheater={() => setTheaterMode(t => !t)}
                 onLoadedMetadata={handlePlayerLoadedMetadata}
                 onTimeUpdate={handlePlayerTimeUpdate}
                 onPause={handlePlayerPause}
                 onEnded={handlePlayerEnded}
+                onSubUpload={handleSubUpload}
               />
             ) : (
               <div className="watch-player-fallback">

@@ -22,11 +22,13 @@ const CustomVideoPlayer = forwardRef(function CustomVideoPlayer({
   onTimeUpdate,
   onPause,
   onEnded,
-  onPlayStart
+  onPlayStart,
+  onSubUpload
 }, ref) {
   const videoRef = useRef(null);
   const wrapRef = useRef(null);
   const hideTimerRef = useRef(null);
+  const subInputRef = useRef(null);
 
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -37,6 +39,8 @@ const CustomVideoPlayer = forwardRef(function CustomVideoPlayer({
   const [speed, setSpeed] = useState(1);
   const [showControls, setShowControls] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
+  const [showSubMenu, setShowSubMenu] = useState(false);
+  const [subActive, setSubActive] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
   const [seekHover, setSeekHover] = useState(null);
 
@@ -117,15 +121,33 @@ const CustomVideoPlayer = forwardRef(function CustomVideoPlayer({
     return () => document.removeEventListener('fullscreenchange', onFs);
   }, []);
 
-  // Click outside settings
+  // Click outside menus
   useEffect(() => {
-    if (!showSettings) return;
+    if (!showSettings && !showSubMenu) return;
     const onDoc = (e) => {
-      if (!wrapRef.current?.contains(e.target)) setShowSettings(false);
+      if (!wrapRef.current?.contains(e.target)) { setShowSettings(false); setShowSubMenu(false); }
     };
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
-  }, [showSettings]);
+  }, [showSettings, showSubMenu]);
+
+  // Sync subtitle track mode with subActive state
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !subUrl) return;
+    const sync = () => {
+      if (v.textTracks.length > 0) {
+        v.textTracks[0].mode = subActive ? 'showing' : 'hidden';
+      }
+    };
+    if (v.readyState >= 1) sync();
+    else v.addEventListener('loadedmetadata', sync, { once: true });
+  }, [subUrl, subActive]);
+
+  const toggleSubActive = () => {
+    setSubActive(v => !v);
+    setShowSubMenu(false);
+  };
 
   const togglePlay = () => {
     const v = videoRef.current;
@@ -297,7 +319,7 @@ const CustomVideoPlayer = forwardRef(function CustomVideoPlayer({
 
           {/* Settings (speed) */}
           <div className="vp-dropdown-wrap">
-            <button className="vp-btn" onClick={() => setShowSettings(s => !s)} title="Pengaturan">
+            <button className="vp-btn" onClick={() => { setShowSettings(s => !s); setShowSubMenu(false); }} title="Pengaturan">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
             </button>
             {showSettings && (
@@ -315,6 +337,45 @@ const CustomVideoPlayer = forwardRef(function CustomVideoPlayer({
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Subtitle / CC */}
+          <div className="vp-dropdown-wrap">
+            <button
+              className={`vp-btn ${subUrl && subActive ? 'active' : ''}`}
+              onClick={() => { setShowSubMenu(s => !s); setShowSettings(false); }}
+              title="Subtitle (CC)"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2" />
+                <path d="M7 12h4M7 15h2M13 12h4M13 15h2" />
+              </svg>
+            </button>
+            {showSubMenu && (
+              <div className="vp-menu">
+                <div className="vp-menu-header">Subtitle</div>
+                {subUrl && (
+                  <button className={`vp-menu-item ${subActive ? 'active' : ''}`} onClick={toggleSubActive}>
+                    {subActive ? 'Nonaktifkan' : 'Aktifkan'}
+                    {subActive && <span className="vp-check">✓</span>}
+                  </button>
+                )}
+                <button className="vp-menu-item" onClick={() => subInputRef.current?.click()}>
+                  Upload File (.srt / .vtt)
+                </button>
+              </div>
+            )}
+            <input
+              ref={subInputRef}
+              type="file"
+              accept=".srt,.vtt,.ass,.ssa"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) { onSubUpload && onSubUpload(file); setSubActive(true); setShowSubMenu(false); }
+                e.target.value = '';
+              }}
+            />
           </div>
 
           {/* Theater mode */}
