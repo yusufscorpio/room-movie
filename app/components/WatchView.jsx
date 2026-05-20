@@ -197,6 +197,7 @@ export default function WatchView({ item, allItems, onBack, onPlay, onToast, sub
                 src={resolvedSrc}
                 subUrl={localSubUrl || subUrl}
                 subLang={subtitle === 'manual' ? 'id' : (subtitle !== 'off' ? subtitle : 'id')}
+                subtitle={subtitle}
                 theaterMode={theaterMode}
                 onToggleTheater={() => setTheaterMode(t => !t)}
                 onLoadedMetadata={handlePlayerLoadedMetadata}
@@ -204,6 +205,12 @@ export default function WatchView({ item, allItems, onBack, onPlay, onToast, sub
                 onPause={handlePlayerPause}
                 onEnded={handlePlayerEnded}
                 onSubUpload={handleSubUpload}
+                onSubChange={(code) => {
+                  if (typeof window !== 'undefined') {
+                    const evt = new CustomEvent('room-subtitle-change', { detail: code });
+                    window.dispatchEvent(evt);
+                  }
+                }}
               />
             ) : (
               <div className="watch-player-fallback">

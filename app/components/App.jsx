@@ -132,6 +132,13 @@ export default function App() {
     showToast('Anda telah logout', 'success');
   };
 
+  // Listen for subtitle change from inside the player
+  useEffect(() => {
+    const handler = (e) => handleChangeSubtitle(e.detail);
+    window.addEventListener('room-subtitle-change', handler);
+    return () => window.removeEventListener('room-subtitle-change', handler);
+  }, []);
+
   // Language / subtitle
   const handleChangeLang = (code) => {
     Data.setLang(code);

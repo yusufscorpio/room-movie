@@ -10,12 +10,22 @@ function fmtTime(s) {
   return `${m}:${sec}`;
 }
 
+const SUBS = [
+  { code: 'off', label: 'Nonaktif' },
+  { code: 'id', label: '🇮🇩 Indonesia' },
+  { code: 'en', label: '🇬🇧 English' },
+  { code: 'zh', label: '🇨🇳 Mandarin' },
+  { code: 'ms', label: '🇲🇾 Melayu' },
+  { code: 'manual', label: '📁 Upload File (.srt/.vtt)' },
+];
+
 const CustomVideoPlayer = forwardRef(function CustomVideoPlayer({
   src,
   poster,
   autoPlay = true,
   subUrl,
   subLang,
+  subtitle,
   theaterMode,
   onToggleTheater,
   onLoadedMetadata,
@@ -23,7 +33,8 @@ const CustomVideoPlayer = forwardRef(function CustomVideoPlayer({
   onPause,
   onEnded,
   onPlayStart,
-  onSubUpload
+  onSubUpload,
+  onSubChange
 }, ref) {
   const videoRef = useRef(null);
   const wrapRef = useRef(null);
@@ -354,15 +365,29 @@ const CustomVideoPlayer = forwardRef(function CustomVideoPlayer({
             {showSubMenu && (
               <div className="vp-menu">
                 <div className="vp-menu-header">Subtitle</div>
+                {SUBS.map(s => (
+                  <button
+                    key={s.code}
+                    className={`vp-menu-item ${subtitle === s.code ? 'active' : ''}`}
+                    onClick={() => {
+                      if (s.code === 'manual') {
+                        subInputRef.current?.click();
+                      } else {
+                        onSubChange && onSubChange(s.code);
+                        setShowSubMenu(false);
+                      }
+                    }}
+                  >
+                    <span style={{ flex: 1 }}>{s.label}</span>
+                    {subtitle === s.code && <span className="vp-check">✓</span>}
+                  </button>
+                ))}
                 {subUrl && (
-                  <button className={`vp-menu-item ${subActive ? 'active' : ''}`} onClick={toggleSubActive}>
-                    {subActive ? 'Nonaktifkan' : 'Aktifkan'}
-                    {subActive && <span className="vp-check">✓</span>}
+                  <button className={`vp-menu-item ${subActive ? 'active' : ''}`} onClick={toggleSubActive}
+                    style={{ borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: 4 }}>
+                    {subActive ? '✓ Subtitle Aktif' : '✗ Subtitle Nonaktif'}
                   </button>
                 )}
-                <button className="vp-menu-item" onClick={() => subInputRef.current?.click()}>
-                  Upload File (.srt / .vtt)
-                </button>
               </div>
             )}
             <input
