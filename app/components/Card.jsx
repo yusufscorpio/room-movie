@@ -31,6 +31,21 @@ export default function Card({ item, onPlay }) {
           <span className="card-play-icon"><PlayIcon /></span>
         </div>
         {item.year && <span className="card-year">{item.year}</span>}
+        <span className="card-hd-badge" style={{
+          position: 'absolute', top: 8, left: 8,
+          background: 'linear-gradient(135deg, #ff6b00, #ff3d00)',
+          color: '#fff', fontSize: 10, fontWeight: 800,
+          padding: '3px 7px', borderRadius: 4, letterSpacing: 0.5,
+          boxShadow: '0 2px 6px rgba(0,0,0,0.4)'
+        }}>HD</span>
+        {item.duration && (
+          <span className="card-duration" style={{
+            position: 'absolute', bottom: 8, right: 8,
+            background: 'rgba(0,0,0,0.75)', color: '#fff',
+            fontSize: 11, fontWeight: 600, padding: '3px 7px',
+            borderRadius: 4, backdropFilter: 'blur(4px)'
+          }}>⏱ {item.duration}</span>
+        )}
         {progress && (
           <div className="card-progress">
             <div className="card-progress-fill" style={{ width: `${Math.min(100, progress.percent)}%` }} />
